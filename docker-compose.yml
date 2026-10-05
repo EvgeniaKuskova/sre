@@ -1,0 +1,69 @@
+# Единая точка входа: запуск проекта одной командой
+#
+#   cp .env.example .env     # один раз: задать конфигурацию среды (секреты только в .env)
+#   docker compose up --build
+#
+# Разделение этапов (п. 5):
+#   Build   — docker build: зависимости + компиляция -> готовый к запуску артефакт (образ)
+#   Release — образ обогащается конфигурацией среды из .env (переменные окружения)
+#   Run     — запуск контейнеров (db, migrate, api, web)
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-habits}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в файле .env (см. .env.example)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-habits}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Одноразовый процесс (п. 12): накатывает EF-миграции.
+  # Схему создаёт этот процесс, а не веб-сервер при старте (снимает гонку 2+ реплик, п. 8).
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: HabitTracker.Api/Dockerfile
+      target: migrate
+    environment:
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:?Задайте строку подключения в файле .env (см. .env.example)}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: HabitTracker.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:?Задайте строку подключения в файле .env (см. .env.example)}
+      PORT: ${PORT:-8080}
+    ports:
+      - "${API_PORT:-5286}:${PORT:-8080}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
