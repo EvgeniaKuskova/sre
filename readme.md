@@ -100,6 +100,7 @@ frontend/
 Вся кодовая база хранится в едином git-репозитории: корень — `HabitTracker/`, в нём
 `backend/`, `frontend/`, `docker-compose.yml`, `.github/workflows/`. Артефакт —
 сам репозиторий и его история коммитов.
+Гитхаб - https://github.com/EvgeniaKuskova/sre
 
 ### 2. Зависимости
 Все зависимости явно задекларированы и изолированы:
