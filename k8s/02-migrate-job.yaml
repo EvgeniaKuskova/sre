@@ -1,0 +1,19 @@
+﻿apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: habittracker-migrate:latest
+          imagePullPolicy: Never
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: ConnectionStrings__DefaultConnection

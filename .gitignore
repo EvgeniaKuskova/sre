@@ -18,6 +18,9 @@ frontend/dist/
 .env.*
 !.env.example
 
+# в репозиторий попадает только шаблон k8s/00-secret.example.yaml
+k8s/00-secret.yaml
+
 # --- Логи ---
 *.log
 logs/
