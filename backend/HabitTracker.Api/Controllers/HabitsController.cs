@@ -4,6 +4,7 @@ using Npgsql;
 using HabitTracker.Api.Data;
 using HabitTracker.Api.Models;
 using HabitTracker.Api.DTOs;
+using HabitTracker.Api.Monitoring;
 
 namespace HabitTracker.Api.Controllers;
 
@@ -48,6 +49,7 @@ public class HabitsController(AppDbContext db, ILogger<HabitsController> logger)
         db.Habits.Add(habit);
         await db.SaveChangesAsync();
         logger.LogInformation("Привычка успешно создана. Id: {Id}", habit.Id);
+        HabitMetrics.HabitsCreatedTotal.Inc();
         return CreatedAtAction(nameof(GetAll), new { id = habit.Id }, habit);
     }
 
@@ -63,6 +65,7 @@ public class HabitsController(AppDbContext db, ILogger<HabitsController> logger)
         
         db.Habits.Remove(habit);
         await db.SaveChangesAsync();
+        HabitMetrics.HabitsDeletedTotal.Inc();
         return NoContent();
     }
 
@@ -81,12 +84,14 @@ public class HabitsController(AppDbContext db, ILogger<HabitsController> logger)
 
         if (completedCount >= habit.TargetCount)
         {
+            HabitMetrics.HabitCompletionFailedTotal.Inc();
             return BadRequest(new { message = "Цель на этот период уже достигнута" });
         }
 
         var today = DateTime.UtcNow.Date;
         if (habit.Logs.Any(l => l.CompletedAt.Date == today))
         {
+            HabitMetrics.HabitCompletionFailedTotal.Inc();
             return BadRequest(new { message = "Вы уже отмечали эту привычку сегодня" });
         }
 
@@ -101,10 +106,12 @@ public class HabitsController(AppDbContext db, ILogger<HabitsController> logger)
             // Гонку закрывает уникальный индекс (HabitId, дата выполнения по UTC),
             // поэтому параллельная вставка «теряется» на уровне СУБД (фактор 8).
             logger.LogInformation("Конкурентная попытка отметить привычку {HabitName} дважды за день", habit.Name);
+            HabitMetrics.HabitCompletionFailedTotal.Inc();
             return BadRequest(new { message = "Вы уже отмечали эту привычку сегодня" });
         }
 
         logger.LogInformation("Привычка {HabitName} успешно отмечена как выполненная", habit.Name);
+        HabitMetrics.HabitsCompletedTotal.Inc();
         return Ok();
     }
 }
