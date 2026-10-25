@@ -1,7 +1,22 @@
 using HabitTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Context;
+using Serilog.Formatting.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("service.name", "HabitTracker.Api")
+    .WriteTo.Console(new JsonFormatter(renderMessage: true))
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers();
@@ -26,5 +41,13 @@ if (!string.IsNullOrWhiteSpace(port))
 
 app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.MapControllers();
+
+app.Use(async (context, next) =>
+{
+    using (LogContext.PushProperty("RequestId", context.TraceIdentifier))
+    {
+        await next();
+    }
+});
 
 app.Run();
