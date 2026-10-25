@@ -1,5 +1,6 @@
 using HabitTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 using Serilog;
 using Serilog.Context;
 using Serilog.Formatting.Json;
@@ -49,5 +50,8 @@ app.Use(async (context, next) =>
         await next();
     }
 });
+
+app.UseHttpMetrics();
+app.MapMetrics();
 
 app.Run();
