@@ -1,0 +1,29 @@
+﻿groups:
+  - name: habit_tracker_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_received_total{code=~"4..|5.."}[5m])) / sum(rate(http_requests_received_total[5m])) > 0.3
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Высокая доля ошибок клиента/сервера (4xx/5xx)"
+          description: "Доля 4xx и 5xx ошибок превышает 30% за последние 5 минут."
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая задержка ответа (p95)"
+          description: "95-й перцентиль времени ответа превышает 200мс"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая загрузка CPU"
+          description: "Процесс использует более 80% CPU в течение 5 минут"
