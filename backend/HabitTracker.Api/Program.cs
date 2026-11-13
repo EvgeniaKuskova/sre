@@ -32,6 +32,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 var port = builder.Configuration["PORT"];
@@ -53,5 +54,5 @@ app.Use(async (context, next) =>
 
 app.UseHttpMetrics();
 app.MapMetrics();
-
+app.MapHealthChecks("/health");
 app.Run();
