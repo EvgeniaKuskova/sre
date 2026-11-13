@@ -45,6 +45,20 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command: [ "pg_isready", "-U", "postgres", "-d", "habits" ]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
         - name: postgres-exporter
           image: prometheuscommunity/postgres-exporter:latest
           env:
@@ -69,6 +83,7 @@ kind: Service
 metadata:
   name: postgres
 spec:
+  clusterIP: None
   selector:
     app: postgres
   ports:
