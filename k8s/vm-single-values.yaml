@@ -1,0 +1,16 @@
+﻿alertmanager:
+  enabled: true
+server:
+  scrape:
+    enabled: true
+vmalert:
+  enabled: true
+  extraArgs:
+    rule: /etc/vm/rules/alerting_rules.yml
+  extraVolumeMounts:
+    - mountPath: /etc/vm/rules
+      name: alert-rules
+  extraVolumes:
+    - configMap:
+        name: vm-alert-rules
+      name: alert-rules
