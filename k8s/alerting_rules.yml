@@ -20,10 +20,23 @@
           description: "95-й перцентиль времени ответа превышает 200мс"
 
       - alert: HighCPUUsage
-        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
         for: 1m
         labels:
           severity: warning
         annotations:
           summary: "Высокая загрузка CPU"
           description: "Процесс использует более 80% CPU в течение 5 минут"
+
+      - alert: HighHabitCompletionFailureRate
+        expr: |
+          sum(rate(habit_completion_failed_total[5m]))
+          /
+          (sum(rate(habit_completed_total[5m])) + sum(rate(habit_completion_failed_total[5m])))
+          > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая доля ошибок при отметке привычек"
+          description: "Более 20% попыток отметить привычку завершаются ошибкой за последние 5 минут"
