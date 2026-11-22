@@ -34,12 +34,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddHealthChecks();
 
-var app = builder.Build();
 var port = builder.Configuration["PORT"];
 if (!string.IsNullOrWhiteSpace(port))
 {
     builder.WebHost.UseUrls($"http://+:{port}");
 }
+
+var app = builder.Build();
 
 app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.MapControllers();
@@ -55,4 +56,7 @@ app.Use(async (context, next) =>
 app.UseHttpMetrics();
 app.MapMetrics();
 app.MapHealthChecks("/health");
+
+var version = builder.Configuration["VERSION"] ?? "v1.0";
+app.MapGet("/version", () => Results.Json(new { version }));
 app.Run();
