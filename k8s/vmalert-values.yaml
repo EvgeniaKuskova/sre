@@ -1,0 +1,22 @@
+﻿server:
+  datasource:
+    url: http://vm-single-victoria-metrics-single-server.metrics.svc:8428
+  notifier:
+    url: http://vmalert-victoria-metrics-alert-alertmanager.metrics.svc:9093
+  extraArgs:
+    rule: "/etc/vm/rules/alerting_rules.yml"
+  extraVolumes:
+    - name: alert-rules
+      configMap:
+        name: vm-alert-rules
+  extraVolumeMounts:
+    - name: alert-rules
+      mountPath: "/etc/vm/rules"
+
+alertmanager:
+  enabled: true
+  config:
+    route:
+      receiver: 'default'
+    receivers:
+      - name: 'default'

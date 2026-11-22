@@ -28,7 +28,7 @@ data:
         };
         http.post(API_URL, payload, params);
         
-        sleep(0.1);
+        sleep(5);
     }
 ---
 apiVersion: apps/v1
