@@ -1,0 +1,69 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-v2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: api
+        version: v2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: api
+          image: habittracker-api:v2
+          imagePullPolicy: Never
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: PORT
+              value: "8080"
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: ConnectionStrings__DefaultConnection
+            - name: VERSION
+              value: v2.0
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-v2
+spec:
+  selector:
+    app: api
+    version: v2
+  ports:
+    - port: 8080
+      targetPort: 8080
